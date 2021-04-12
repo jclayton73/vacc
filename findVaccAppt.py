@@ -10,7 +10,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 import sched
 import time
 import argparse
-import pyttsx3
 
 FREQ = 10
 LOG = False
@@ -59,7 +58,6 @@ def search_page():
             pass
     print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
           f"\033[31mno appointment found\033[0m\033[K", end="", flush=True)
-    t += FREQ
 
 
 def get_time():
@@ -119,6 +117,7 @@ if __name__ == '__main__':
                 else:
                     if not sameDate(found, args.day):
                         found = ""
+        t += FREQ
 
     driver.switch_to.window(driver.current_window_handle)
     for _ in range(0, 3):
