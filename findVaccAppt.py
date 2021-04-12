@@ -9,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import sched
 import time
+import pyttsx3
 
 FREQ = 10
 LOG = False
@@ -54,7 +55,7 @@ def search_page():
 
         except NoSuchElementException:
             pass
-
+    driver.switch_to.window(driver.current_window_handle)
     print(f"no appointment found at {time.ctime(time.time())}")
     t += FREQ
 
@@ -80,3 +81,4 @@ if __name__ == '__main__':
 
     for _ in range(0, 3):
         playsound('SonicRing.mp3')
+
