@@ -29,8 +29,8 @@ def search_page():
     try:
         element = driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
         print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
-              f"\033[32mappointment found!\033[0m\n"
-              f"{' ' * 24}{element.get_attribute('aria-label')}\033[K")
+              f"\033[32mappointment found!\033[0m\033[K\n"
+              f"{' ' * 24}{element.get_attribute('aria-label')}")
         if LOG:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
