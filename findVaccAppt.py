@@ -6,79 +6,62 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
 import sched
 import time
 
 FREQ = 10
-LOG = True
+LOG = False
 
 
-def find_appt(t):
+def find_appt():
     driver.refresh()
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, 5).until(
         ec.presence_of_element_located((By.XPATH, "//figure/div"))
     )
-    search_page(t)
+    search_page()
 
 
-def search_page(t):
+def search_page():
+    global found
+    global t
     try:
         driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
+        print(f"availability found at {time.ctime(time.time())}")
         if LOG:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
-            s.enterabs(t + FREQ, 1, find_appt, argument=((t + FREQ),))
-            s.run()
-        else:
-            for _ in range(0, 3):
-                playsound('SonicRing.mp3')
+        found = True
         return
     except NoSuchElementException:
+        print("no timesgrid")
         try:
             # search for next appointment
             #     if found click yes, scroll, click next appointment, search page
 
             element = driver.find_element(By.XPATH, '//*[@ data-test="next-availability-button"]')
             print(f"next availability found at {time.ctime(time.time())}")
-            if LOG:
-                f = open("findVaccLog.txt", "a")
-                f.write(f"{time.ctime(time.time())}\n")
-                s.enterabs(t + FREQ, 1, find_appt, argument=((t + FREQ),))
-                s.run()
-            else:
-                for _ in range(0, 3):
-                    playsound('SonicRing.mp3')
+
+            yes = driver.find_element(By.XPATH, '//*[@ data-test="modal-primary-button"]')
+            yes.click()
+
+            ActionChains(driver).move_to_element(element)
+            element.click()
+            print("searching page")
+            time.sleep(1)
+            search_page()
             return
 
-            # for _ in range(0, 3):
-            #     playsound('SonicRing.mp3')
-            # f = open("findVaccLog.txt", "a")
-            # f.write(f"{time.ctime(time.time())}")
-            # return
-
-
-            # yes = driver.find_element(By.XPATH, '//*[@ data-test="modal-primary-button"]')
-            # yes.click()
-            # book_online = driver.find_element(By.XPATH, '//*[@ data-test="book-online-button"]')
-            # book_online.click()
-            # element.click()
-            #
-            # search_page(t)
-            return
-            # playsound('SonicRing.mp3')
-            # search_page(t)
-            # return
         except NoSuchElementException:
             pass
 
     print(f"no appointment found at {time.ctime(time.time())}")
-    s.enterabs(t + FREQ, 1, find_appt, argument=((t + FREQ),))
-    s.run()
+    t += FREQ
 
 
 def get_time():
-    t = time.time()
-    return t - (t % FREQ)
+    tm = time.time()
+    return tm - (tm % FREQ)
 
 
 if __name__ == '__main__':
@@ -87,11 +70,13 @@ if __name__ == '__main__':
     driver = webdriver.Chrome(options=chrome_options)
     driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
     s = sched.scheduler(time.time, time.sleep)
-    s.enter(0, 1, find_appt, argument=(get_time(),))
-    s.run()
+    found = False
+    t = get_time()
+    while not found:
+        s.enterabs(t + FREQ, 1, find_appt)
+        s.run()
+        if LOG:
+            found = False
 
-"""
-    found = false
-    while not found
-        schedule and run
-"""
+    for _ in range(0, 3):
+        playsound('SonicRing.mp3')
