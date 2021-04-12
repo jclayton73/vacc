@@ -9,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import sched
 import time
+import argparse
 import pyttsx3
 
 FREQ = 10
@@ -27,15 +28,14 @@ def search_page():
     global found
     global t
     try:
-        driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
-        print(f"availability found at {time.ctime(time.time())}")
+        element = driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
+        print(f"availability found at {time.ctime(time.time())}\n    for {element.get_attribute('data-starttime')}")
         if LOG:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
-        found = True
+        found = element.get_attribute("data-starttime")
         return
     except NoSuchElementException:
-        print("no timesgrid")
         try:
             # search for next appointment
             #     if found click yes, scroll, click next appointment, search page
@@ -48,14 +48,12 @@ def search_page():
 
             ActionChains(driver).move_to_element(element)
             element.click()
-            print("searching page")
             time.sleep(1)
             search_page()
             return
 
         except NoSuchElementException:
             pass
-    driver.switch_to.window(driver.current_window_handle)
     print(f"no appointment found at {time.ctime(time.time())}")
     t += FREQ
 
@@ -65,20 +63,59 @@ def get_time():
     return tm - (tm % FREQ)
 
 
+def strToDate(sdate):
+    if len(sdate) != 8 \
+            or not sdate.isnumeric() \
+            or int(sdate[0:2]) not in range(1, 12) \
+            or int(sdate[2:4]) not in range(1, 31):
+        raise TypeError
+    return int(sdate)
+
+
+#     compare to current date
+#     make sure all numbers are within range
+
+def inDateRange(starttime, day, endday):
+    intstarttime = int(starttime[0:10].replace("-", ""))
+    return day <= intstarttime <= endday
+
+
+def sameDate(starttime, day):
+    return int(starttime[0:10].replace("-", "")) == day
+
+
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Find a vaccine appointment from Tufts Med')
+    parser.add_argument("--log", "-l", help="log appointments",
+                        action="store_true")
+    parser.add_argument("--day", "-d", type=strToDate, help="find appointment for specific date - MMDDYYYY\n"
+                                                            "if -e option is used, finds appointment between dates")
+    parser.add_argument("-endday", "-e", type=strToDate, help="find appointment before date - MMDDYYYY")
+    args = parser.parse_args()
+
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=chrome_options)
     driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
+
     s = sched.scheduler(time.time, time.sleep)
-    found = False
+    found = ""
     t = get_time()
+    LOG = args.log
     while not found:
         s.enterabs(t + FREQ, 1, find_appt)
         s.run()
         if LOG:
-            found = False
+            found = None
+        if found:
+            if args.day is not None:
+                if args.endday is not None:
+                    if not inDateRange(found, args.day, args.endday):
+                        found = ""
+                else:
+                    if not sameDate(found, args.day):
+                        found = ""
 
+    driver.switch_to.window(driver.current_window_handle)
     for _ in range(0, 3):
         playsound('SonicRing.mp3')
-
