@@ -29,7 +29,9 @@ def search_page():
     global t
     try:
         element = driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
-        print(f"availability found at {time.ctime(time.time())}\n    for {element.get_attribute('data-starttime')}")
+        print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
+              f"\033[32mappointment found!\033[0m\n"
+              f"{' ' * 24}{element.get_attribute('aria-label')}\033[K")
         if LOG:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
@@ -41,7 +43,8 @@ def search_page():
             #     if found click yes, scroll, click next appointment, search page
 
             element = driver.find_element(By.XPATH, '//*[@ data-test="next-availability-button"]')
-            print(f"next availability found at {time.ctime(time.time())}")
+            print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
+                  f"\033[33mnext appointment found\033[0m\033[K")
 
             yes = driver.find_element(By.XPATH, '//*[@ data-test="modal-primary-button"]')
             yes.click()
@@ -54,7 +57,8 @@ def search_page():
 
         except NoSuchElementException:
             pass
-    print(f"no appointment found at {time.ctime(time.time())}")
+    print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
+          f"\033[31mno appointment found\033[0m\033[K", end="", flush=True)
     t += FREQ
 
 
