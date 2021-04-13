@@ -24,6 +24,7 @@ def find_appt():
         search_page()
     except TimeoutException:
         if driver.title == "Oops, page not found - 404 Error - Zocdoc":
+            print(f"\r\033[34m404 Error - Trying again\033[0m\033[K")
             driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
             find_appt()
         else:
@@ -74,7 +75,7 @@ def strToDate(sdate):
             or int(sdate[0:2]) not in range(1, 12) \
             or int(sdate[2:4]) not in range(1, 31):
         raise TypeError
-    return int(sdate)
+    return int(sdate[4:8]+sdate[0:2]+sdate[2:4])
 #     compare to current date
 #     make sure all numbers are within range
 
@@ -101,7 +102,7 @@ if __name__ == '__main__':
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
     driver = webdriver.Chrome(options=chrome_options)
-    driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccineplease")
+    driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
 
     s = sched.scheduler(time.time, time.sleep)
     found = ""
