@@ -10,38 +10,51 @@ from selenium.webdriver.common.action_chains import ActionChains
 import sched
 import time
 import argparse
+from enum import Enum
+
+
+class Mode(Enum):
+    ANY = 1
+    DAY = 2
+    SPAN = 3
+
 
 FREQ = 10
 LOG = False
 
 
-def find_appt():
+def find_appt(day, endday, mode):
     driver.refresh()
     try:
         WebDriverWait(driver, 5).until(
             ec.presence_of_element_located((By.XPATH, "//figure/div"))
         )
-        search_page()
+        search_page(day, endday, mode)
     except TimeoutException:
         if driver.title == "Oops, page not found - 404 Error - Zocdoc":
             print(f"\r\033[34m404 Error - Trying again\033[0m\033[K")
             driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
-            find_appt()
+            find_appt(day, endday, mode)
         else:
-            raise Exception
+            raise TimeoutException
 
 
-def search_page():
+def search_page(day, endday, mode):
     global found
     try:
-        element = driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
-        print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
-              f"\033[32mappointment found!\033[0m\033[K\n"
-              f"{' ' * 25}{element.get_attribute('aria-label')}")
+        driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
+        for e in driver.find_elements(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]'):
+            print(f"\r\033[1m{time.ctime(time.time())}\033[0m --- "
+                  f"\033[32mappointment found!\033[0m\033[K\n"
+                  f"{' ' * 25}{e.get_attribute('aria-label')}")
+            starttime = e.get_attribute("data-starttime")
+            if validate_apt(mode, starttime, day, endday):
+                found = starttime
+                break
         if LOG:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
-        found = element.get_attribute("data-starttime")
+            found = ""
         return
     except NoSuchElementException:
         try:
@@ -67,6 +80,25 @@ def search_page():
 def get_time():
     tm = time.time()
     return tm - (tm % FREQ)
+
+
+def get_mode(d, e):
+    if d is not None:
+        if e is not None:
+            return Mode.SPAN
+        else:
+            return Mode.DAY
+    else:
+        return Mode.ANY
+
+
+def validate_apt(mode, apt_starttime, day, endday):
+    if mode == Mode.ANY:
+        return True
+    elif mode == Mode.DAY:
+        return sameDate(apt_starttime, day)
+    else:
+        return inDateRange(apt_starttime, day, endday)
 
 
 def strToDate(sdate):
@@ -104,24 +136,16 @@ if __name__ == '__main__':
     driver = webdriver.Chrome(options=chrome_options)
     driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
 
+    mode = get_mode(args.day, args.endday)
+
     s = sched.scheduler(time.time, time.sleep)
     found = ""
+    FREQ = args.frequency
     t = get_time()
     LOG = args.log
-    FREQ = args.frequency
     while not found:
-        s.enterabs(t + FREQ, 1, find_appt)
+        s.enterabs(t + FREQ, 1, find_appt, argument=(args.day, args.endday, mode))
         s.run()
-        if LOG:
-            found = ""
-        if found:
-            if args.day is not None:
-                if args.endday is not None:
-                    if not inDateRange(found, args.day, args.endday):
-                        found = ""
-                else:
-                    if not sameDate(found, args.day):
-                        found = ""
         t += FREQ
 
     driver.switch_to.window(driver.current_window_handle)
