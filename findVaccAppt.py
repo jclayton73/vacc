@@ -19,27 +19,63 @@ class Mode(Enum):
     SPAN = 3
 
 
-FREQ = 10
-LOG = False
+found = ""
 
 
-def find_appt(day, endday, mode):
+def main():
+    global found
+    parser = argparse.ArgumentParser(description='Find a vaccine appointment from Tufts Med')
+    parser.add_argument("--log", "-l", help="log appointments",
+                        action="store_true")
+    parser.add_argument("--day", "-d", type=strToDate, help="find appointment for specific date - MMDDYYYY\n"
+                                                            "if -e option is used, finds appointment between dates")
+    parser.add_argument("-endday", "-e", type=strToDate, help="find appointment before date - MMDDYYYY")
+    parser.add_argument("-frequency", "-f", type=int, default=10, help="frequency to check appointments, in seconds")
+    args = parser.parse_args()
+
+    chrome_options = Options()
+    chrome_options.add_experimental_option("detach", True)
+    driver = webdriver.Chrome(options=chrome_options)
+
+    login(driver)
+
+    driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
+
+    mode = get_mode(args.day, args.endday)
+
+    s = sched.scheduler(time.time, time.sleep)
+    found = ""
+    freq = args.frequency
+    t = get_time(freq) + freq
+
+    while not found:
+        s.enterabs(t, 1, find_appt, argument=(args.day, args.endday,
+                                              mode, args.log, driver))
+        s.run()
+        t += freq
+
+    driver.switch_to.window(driver.current_window_handle)
+    for _ in range(0, 3):
+        playsound('SonicRing.mp3')
+
+
+def find_appt(day, endday, mode, log, driver):
     driver.refresh()
     try:
         WebDriverWait(driver, 5).until(
             ec.presence_of_element_located((By.XPATH, "//figure/div"))
         )
-        search_page(day, endday, mode)
+        search_page(day, endday, mode, log, driver)
     except TimeoutException:
         if driver.title == "Oops, page not found - 404 Error - Zocdoc":
             print(f"\r\033[34m404 Error - Trying again\033[0m\033[K")
             driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
-            find_appt(day, endday, mode)
+            find_appt(day, endday, mode, log, driver)
         else:
             raise TimeoutException
 
 
-def search_page(day, endday, mode):
+def search_page(day, endday, mode, log, driver):
     global found
     try:
         driver.find_element(By.XPATH, '//*[@ data-test="timesgrid-timeslot"]')
@@ -51,7 +87,7 @@ def search_page(day, endday, mode):
             if validate_apt(mode, starttime, day, endday):
                 found = starttime
                 break
-        if LOG:
+        if log:
             f = open("findVaccLog.txt", "a")
             f.write(f"{time.ctime(time.time())}\n")
             found = ""
@@ -68,7 +104,7 @@ def search_page(day, endday, mode):
             ActionChains(driver).move_to_element(element)
             element.click()
             time.sleep(1)
-            search_page()
+            search_page(day, endday, mode, log, driver)
             return
 
         except NoSuchElementException:
@@ -77,9 +113,9 @@ def search_page(day, endday, mode):
           f"\033[31mno appointment found\033[0m\033[K", end="", flush=True)
 
 
-def get_time():
+def get_time(freq):
     tm = time.time()
-    return tm - (tm % FREQ)
+    return tm - (tm % freq)
 
 
 def get_mode(d, e):
@@ -108,8 +144,6 @@ def strToDate(sdate):
             or int(sdate[2:4]) not in range(1, 31):
         raise TypeError
     return int(sdate[4:8]+sdate[0:2]+sdate[2:4])
-#     compare to current date
-#     make sure all numbers are within range
 
 
 def inDateRange(starttime, day, endday):
@@ -121,33 +155,26 @@ def sameDate(starttime, day):
     return int(starttime[0:10].replace("-", "")) == day
 
 
+def login(driver):
+    print("First, login to zocdoc. This will make the appointment signup faster.")
+    driver.get("https://www.zocdoc.com/signin")
+    input("Press enter to continue")
+
+    def insurance_prompt():
+        b = input("It is even faster if you put in your insurance information and "
+                  "address.\nWould you like to do that now? [y/N] ")
+        if b.lower() == "y":
+            driver.get("https://www.zocdoc.com/patient/editprofile")
+            input("press enter to continue")
+        elif b.lower() == "n" or not b:
+            pass
+        else:
+            print(f"{b} is not a valid answer, please say y/Y or n/N")
+            insurance_prompt()
+
+    insurance_prompt()
+    print("Looking for appointments...")
+
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Find a vaccine appointment from Tufts Med')
-    parser.add_argument("--log", "-l", help="log appointments",
-                        action="store_true")
-    parser.add_argument("--day", "-d", type=strToDate, help="find appointment for specific date - MMDDYYYY\n"
-                                                            "if -e option is used, finds appointment between dates")
-    parser.add_argument("-endday", "-e", type=strToDate, help="find appointment before date - MMDDYYYY")
-    parser.add_argument("-frequency", "-f", type=int, default=10, help="frequency to check appointments, in seconds")
-    args = parser.parse_args()
-
-    chrome_options = Options()
-    chrome_options.add_experimental_option("detach", True)
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get("https://www.zocdoc.com/wl/tuftscovid19vaccination/patientvaccine")
-
-    mode = get_mode(args.day, args.endday)
-
-    s = sched.scheduler(time.time, time.sleep)
-    found = ""
-    FREQ = args.frequency
-    t = get_time()
-    LOG = args.log
-    while not found:
-        s.enterabs(t + FREQ, 1, find_appt, argument=(args.day, args.endday, mode))
-        s.run()
-        t += FREQ
-
-    driver.switch_to.window(driver.current_window_handle)
-    for _ in range(0, 3):
-        playsound('SonicRing.mp3')
+    main()
