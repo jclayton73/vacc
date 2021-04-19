@@ -1,4 +1,4 @@
-# FindVaccAppointment
+# FindVaccAppt
     
 Python program that watches the Tufts Medical Center Vaccine appointments page for new availability. 
 
