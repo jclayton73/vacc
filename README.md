@@ -14,7 +14,10 @@ Dependencies:
 - argparse
 
 ## Usage
-./findVaccineAppt (assuming your python3 is in /usr/local/bin/python3)
+> python3 findVaccAppt.py [-h] [--log] [--day DAY] [-endday ENDDAY] [-frequency FREQUENCY]
+
+If your python is in /usr/local/bin/python3
+> ./findVaccAppt.py [-h] [--log] [--day DAY] [-endday ENDDAY] [-frequency FREQUENCY]
 
 Otherwise, python3 findVaccineAppt
 
