@@ -19,7 +19,6 @@ Dependencies:
 If your python is in /usr/local/bin/python3
 > ./findVaccAppt.py [-h] [--log] [--day DAY] [-endday ENDDAY] [-frequency FREQUENCY]
 
-Otherwise, python3 findVaccineAppt
 
 ### Arguments
 | Flag | Description |
