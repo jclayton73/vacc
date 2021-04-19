@@ -24,13 +24,18 @@ found = ""
 
 def main():
     global found
-    parser = argparse.ArgumentParser(description='Find a vaccine appointment from Tufts Med')
+    parser = argparse.ArgumentParser(description='Find a vaccine appointment '
+                                                 'from Tufts Med')
     parser.add_argument("--log", "-l", help="log appointments",
                         action="store_true")
-    parser.add_argument("--day", "-d", type=strToDate, help="find appointment for specific date - MMDDYYYY\n"
-                                                            "if -e option is used, finds appointment between dates")
-    parser.add_argument("-endday", "-e", type=strToDate, help="find appointment before date - MMDDYYYY")
-    parser.add_argument("-frequency", "-f", type=int, default=10, help="frequency to check appointments, in seconds")
+    parser.add_argument("--day", "-d", type=strToDate,
+                        help="find appointment for specific date - MMDDYYYY\n"
+                             "if -e option is used, finds appointment between "
+                             "dates")
+    parser.add_argument("-endday", "-e", type=strToDate,
+                        help="find appointment before date - MMDDYYYY")
+    parser.add_argument("-frequency", "-f", type=int, default=10,
+                        help="frequency to check appointments, in seconds")
     args = parser.parse_args()
 
     chrome_options = Options()
@@ -169,7 +174,7 @@ def login(driver):
         elif b.lower() == "n" or not b:
             pass
         else:
-            print(f"{b} is not a valid answer, please say y/Y or n/N")
+            print(f"{b} is not a valid answer.")
             insurance_prompt()
 
     insurance_prompt()
