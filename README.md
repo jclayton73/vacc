@@ -3,7 +3,7 @@
 Python program that watches the Tufts Medical Center Vaccine appointments page for new availability. 
 
 ## Installation
-Just clone repo.
+Clone the repo, install dependencies.
 
 Dependencies:
 - python3
@@ -19,7 +19,7 @@ Dependencies:
 Otherwise, python3 findVaccineAppt
 
 ### Arguments
---day, -d    find appointment for specific date - MMDDYYYY, if -e option is used, finds appointment between dates
---endday, -e    find appointment before date - MMDDYYYY
---frequency, -f    frequency to check for appointments, in seconds
+--day, -d    find appointment for specific date - MMDDYYYY, if -e option is used, finds appointment between dates  
+--endday, -e    find appointment before date - MMDDYYYY  
+--frequency, -f    frequency to check for appointments, in seconds  
 --log, -log   instead of finding an appointment and finishing, writes the time that the appointment was found and continues. used to find the best frequency to check for appointments.
